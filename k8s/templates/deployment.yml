@@ -1,0 +1,130 @@
+#@ load("@ytt:data", "data")
+#@ load("deployment.star",
+#@  "java_opts",
+#@  "config_dir",
+#@  "secrets_dir")
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uaa
+spec:
+  selector:
+    matchLabels:
+      app: uaa-deployment
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9102'
+        prometheus.io/path: '/metrics'
+      labels:
+        app: uaa-deployment
+    spec: #! pod spec
+      serviceAccountName: uaa
+      containers:
+      - name: uaa
+        image: #@ data.values.image
+        resources:
+          requests:
+            memory: #@ data.values.resources.uaa.requests.memory
+            cpu: #@ data.values.resources.uaa.requests.cpu
+          limits:
+            memory: #@ data.values.resources.uaa.limits.memory
+            cpu: #@ data.values.resources.uaa.limits.cpu
+        ports:
+        - name: http-uaa
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: BPL_TOMCAT_ACCESS_LOGGING
+          value: #@ data.values.tomcat.accessLoggingEnabled
+        - name: JAVA_OPTS
+          value: #@ java_opts(data.values.database.scheme)
+        volumeMounts:
+        - name: uaa-config
+          mountPath: #@ config_dir
+        - name: smtp-credentials-file
+          mountPath: #@ "{}/smtp_credentials.yml".format(secrets_dir)
+          subPath: smtp_credentials.yml
+          readOnly: true
+        - name: database-credentials-file
+          mountPath: #@ "{}/database_credentials.yml".format(secrets_dir)
+          subPath: database_credentials.yml
+          readOnly: true
+        - name: admin-client-credentials-file
+          mountPath: #@ "{}/admin_client_credentials.yml".format(secrets_dir)
+          subPath: admin_client_credentials.yml
+          readOnly: true
+        - name: jwt-policy-signing-keys-file
+          mountPath: #@ "{}/jwt_policy_signing_keys.yml".format(secrets_dir)
+          subPath: jwt_policy_signing_keys.yml
+          readOnly: true
+        - name: saml-keys-file
+          mountPath: #@ "{}/saml_keys.yml".format(secrets_dir)
+          subPath: saml_keys.yml
+          readOnly: true
+        - name: encryption-keys-file
+          mountPath: #@ "{}/encryption_keys.yml".format(secrets_dir)
+          subPath: encryption_keys.yml
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http-uaa
+          failureThreshold: 25
+          initialDelaySeconds: 60
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http-uaa
+      - name: statsd-exporter
+        image: #@ data.values.images.statsd_exporter
+        imagePullPolicy: Always
+        args: ["--statsd.listen-udp=:8125"]
+        ports:
+        - name: "metrics-uaa"
+          containerPort: 9102
+          protocol: "TCP"
+        resources:
+          requests:
+            memory: #@ data.values.resources.statsd_exporter.requests.memory
+            cpu: #@ data.values.resources.statsd_exporter.requests.cpu
+          limits:
+            memory: #@ data.values.resources.statsd_exporter.limits.memory
+            cpu: #@ data.values.resources.statsd_exporter.limits.cpu
+      volumes:
+      - name: uaa-config
+        configMap:
+          name: uaa-config
+      - name: smtp-credentials-file
+        secret:
+          optional: true
+          secretName: uaa-smtp-credentials
+      - name: database-credentials-file
+        secret:
+          optional: true
+          secretName: uaa-database-credentials
+      - name: admin-client-credentials-file
+        secret:
+          secretName: uaa-admin-client-credentials
+      - name: jwt-policy-signing-keys-file
+        secret:
+          secretName: uaa-jwt-policy-signing-keys
+      - name: ca-certs-files
+        secret:
+          optional: true
+          secretName: uaa-ca-certs
+      - name: truststore-file
+        emptyDir: {}
+      - name: saml-keys-file
+        secret:
+          optional: false
+          secretName: uaa-saml-keys
+      - name: encryption-keys-file
+        secret:
+          optional: false
+          secretName: encryption-keys

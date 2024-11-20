@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: Copyright 2024 Rifa Achrinza
+# SPDX-License-Identifier: Apache-2.0
+[_]
+schema-version = "0.2"
+id = "com.achrinza.cf.uaa.buildpack.tiny"
+name = "CloudFoundry UAA"
+version = "77.9.0+20241121"
+source-url = "https://git.sr.ht/~achrinza/cf-uaa"
+
+[io.buildpacks]
+builder = "paketobuildpacks/builder-jammy-tiny"
+
+[[io.buildpacks.build.env]]
+name = "BP_GRADLE_ADDITIONAL_BUILD_ARGUMENTS"
+value = "-Pversion=77.9.0"
+
+[[io.buildpacks.build.env]]
+name = "BP_GRADLE_BUILT_MODULE"
+value = "uaa"
+
+[[io.buildpacks.build.env]]
+name = "BP_OCI_REVISION"
+value = "b86c87b26c63ac06dbae0f862c5fc9ce53fb97ef"
+
+[[io.buildpacks.build.env]]
+name = "BP_OCI_SOURCE"
+value = "https://git.sr.ht/~achrinza/cf-uaa"
+
+[[io.buildpacks.build.env]]
+name = "BP_OCI_VERSION"
+value = "77.9.0+20241121"

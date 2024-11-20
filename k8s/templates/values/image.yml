@@ -1,0 +1,3 @@
+#@data/values
+---
+image: "quay.io/achrinza/cf-uaa:77.9.0.20241121"
