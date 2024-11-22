@@ -18,13 +18,17 @@ Ensure that the following are installed:
 - Podman or Docker
 
 ```sh
-$ git clone https://git.sr.ht/~achrinza/cf-uaa
+$ git clone --recurse-submodules https://git.sr.ht/~achrinza/cf-uaa
 $ ./cf-uaa/create-image.sh
 ```
 
 The image will be called `cf-uaa`.
 
 ## Deploy to Kubernetes
+
+Ensure that the following are installed:
+- `kubectl` CLI
+- Carvel (k14s) tools
 
 One-liner to deploy a **non-production** instance:
 
@@ -33,7 +37,7 @@ $ git clone https://git.sr.ht/~achrinza/cf-uaa
 $ ytt \
     --file ./cf-uaa/k8s/templates/ \
     --file ./cf-uaa/k8s/addons/local_testing.yml \
-    --file ./cf-uaa/k8s/addons/ingress.yml | kubectl apply -f -
+    --file ./cf-uaa/k8s/addons/ingress.yml | kapp deploy -a uaa-instance -f -
 ```
 
 > [!WARNING]
